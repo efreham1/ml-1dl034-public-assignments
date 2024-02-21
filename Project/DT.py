@@ -26,7 +26,7 @@ def load_dataset():
 
     return df_, forest_, target_
 
-def calc_score(df):
+def calc_score(df): 
     global X_train, X_test, y_train, y_test
 
     features = df
@@ -37,7 +37,9 @@ def calc_score(df):
     # print("Decision tree %0.2f accuracy with a standard deviation of %0.2f" % (forest_score.mean(), forest_score.std()))
 
     forest.fit(X_train, y_train)
-    return forest_score.mean(), forest_score.std()
+    mean = forest_score.mean()
+    dev = forest_score.std()
+    return mean, dev
 
 def drop_columns(df,score_threshold):
     num_columns_before_drop = len(df.columns)
@@ -53,15 +55,12 @@ def drop_columns(df,score_threshold):
     # print(f"num columns before drop: {num_columns_before_drop}")
     # print(f"num columns after drop: {len(df.columns)}")
 
-
-
-
 start = 0.00001
 end = 0.0001
 step = 0.00001
 total_steps = int((end - start) / step) + 1 # Used for loading indicator
 
-best_mean:float = 0
+best_mean:float = 0.0
 best_dev:float = 1
 best_threshold_dev:float = 0
 best_threshold_mean:float = 0
@@ -94,8 +93,7 @@ for i, score_threshold in enumerate(np.arange(start, end + step, step)):
     # ---- Check if we have new Highscore ----
         
 print("\n")
-print(f"best_mean = {best_mean}")
-print(f"best_dev = {best_dev}")
-print(f"best_threshold_dev = {best_threshold_dev}")
-print(f"best_threshold_mean = {best_threshold_mean}")
-    
+print('\U0001F40E' + f" best_mean = {best_mean:.8f} " + '\U0001F40E')
+print('\U0001F40E' + f" best_dev = {best_dev} " + '\U0001F40E')
+print('\U0001F40E' + f" best_threshold_dev = {best_threshold_dev} " + '\U0001F40E')
+print('\U0001F40E' + f" best_threshold_mean = {best_threshold_mean} " + '\U0001F40E')
