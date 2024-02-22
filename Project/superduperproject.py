@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score
 # DecisionTree # Ebitch
 # Naive Bayes # Mucus
 
-df = pd.read_csv('data.csv', index_col=0)
+df = pd.read_csv('data.csv')
 
 target = df.pop('Cover_Type')
 features = df
