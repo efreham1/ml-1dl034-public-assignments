@@ -21,7 +21,7 @@ hyper_params= {
     "min_samples_split": np.arange(1, 5),
 }
 
-df = pd.read_csv('data.csv')
+df = pd.read_csv('train_dataset.csv')
 
 '''
 #------printing class distribution-----
@@ -40,9 +40,11 @@ plt.savefig(fname="class_distribution")
 
 #-----other bs
 
-print(df['Cover_Type'].value_counts())
+#print(df.head())
 
-target = df.pop('Cover_Type')
+#print(df[' Forest Cover Type Classes'].value_counts())
+
+target = df.pop(' Forest Cover Type Classes')
 features = df
 #features = GenericUnivariateSelect(mode='fdr').fit_transform(features, target)
 
@@ -59,20 +61,35 @@ RF_clf.fit(X_train, y_train)
 #grid_search.fit(X_train,y_train)
 
 feature_scores = pd.Series(RF_clf.feature_importances_, index = X_train.columns).sort_values(ascending= False)
-
-print(f"number cof columns before drop:", {len(df.columns)})
+print(f"number cof columns before drop:", {len(X_train.columns)})
+'''
 # Drops 25 columns, when score < 0.005
 for attribute, score in feature_scores.items():
     if(score < 0.005):
         df = df.drop(attribute,axis = 1)
         # print(f"Dropped column: {attribute}")
+'''
 
-print(f"number cof columns before drop after drop:", {len(df.columns)})
+# Identify features to drop (threshold can be adjusted)
+threshold = 0.001
+features_to_drop = feature_scores[feature_scores < threshold].index
+
+# Drop features from train and test sets
+X_train_new = X_train.drop(features_to_drop, axis=1)
+X_test_new = X_test.drop(features_to_drop, axis=1)
+
+print(f"number cof columns before drop after drop:", {len(X_train_new.columns)})
+
+RF_clf.fit(X_train_new, y_train)
+
+# Evaluation
+accuracy = RF_clf.score(X_test_new, y_test)
+
 
 #y_pred_grid = grid_search.predict(X_test)
-y_pred = RF_clf.predict(X_test)
+y_pred = RF_clf.predict(X_test_new)
 
-print("accuracy not grid:",RF_clf.score(X_test, y_test))
+print("accuracy not grid:",accuracy)
 #print("accuracy with grid",grid_search.score(X_test, y_test))
 #print(grid_search.best_params_)
 
