@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import GenericUnivariateSelect
 from sklearn.model_selection import RandomizedSearchCV
+import multiprocessing
 
 
 hyper_params= {
@@ -66,7 +67,7 @@ X_test_new = X_test.drop(features_to_drop, axis=1)
 
 print(f"number cof columns before drop after drop:", {len(X_train_new.columns)})
 
-grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=5, verbose=2, cv=3)
+grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=15, verbose=2, cv=3)
 
 #RF_clf.fit(X_train_new, y_train)
 grid_search.fit(X_train_new,y_train)
@@ -77,3 +78,6 @@ print("accuracy with grid",grid_search.score(X_test_new, y_test))
 print(grid_search.best_params_)
 
 #accuracy with grid 0.9421346244934478 {'n_estimators': 98, 'min_samples_split': 2, 'max_depth': 26}
+#{'n_estimators': 106, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': None, 'max_depth': 30, 'bootstrap': True}
+#accuracy with grid 0.9609318807782047{'n_estimators': 95, 'min_samples_split': 2, 'min_samples_leaf': 4, 'max_features': None, 'max_depth': 50, 'bootstrap': True}
+#accuracy with grid 0.965633387716436 {'n_estimators': 95, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'max_depth': 40, 'bootstrap': True}
