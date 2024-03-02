@@ -6,7 +6,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import GenericUnivariateSelect
 from sklearn.model_selection import RandomizedSearchCV
-import multiprocessing
+from imblearn.over_sampling import SMOTE,ADASYN
+from imblearn.under_sampling import RandomUnderSampler
+
 
 
 hyper_params= {
@@ -50,12 +52,12 @@ features = pd.DataFrame(features)
 X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=69)
 
 
-RF_clf = RandomForestClassifier(bootstrap= True, random_state=42)
+RF_clf = RandomForestClassifier(n_estimators= 95, min_samples_split= 5, min_samples_leaf=1, max_features= None, max_depth=40, bootstrap=True, random_state=42)
 RF_clf.fit(X_train, y_train)
 
 
 feature_scores = pd.Series(RF_clf.feature_importances_, index = X_train.columns).sort_values(ascending= False)
-print(f"number cof columns before drop:", {len(X_train.columns)})
+print(f"number columns before drop:", {len(X_train.columns)})
 
 # Identify features to drop (threshold can be adjusted)
 threshold = 0.001
@@ -65,19 +67,31 @@ features_to_drop = feature_scores[feature_scores < threshold].index
 X_train_new = X_train.drop(features_to_drop, axis=1)
 X_test_new = X_test.drop(features_to_drop, axis=1)
 
-print(f"number cof columns before drop after drop:", {len(X_train_new.columns)})
+print(f"number columns before drop after drop:", {len(X_train_new.columns)})
 
-grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=15, verbose=2, cv=3)
+#grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=20, verbose=2, cv=3)
 
-#RF_clf.fit(X_train_new, y_train)
-grid_search.fit(X_train_new,y_train)
+#grid_search.fit(X_train_new,y_train)
 
+#X_train_resampled, y_train_resampled = ADASYN().fit_resample(X_train_new, y_train)
+
+rus = RandomUnderSampler(random_state=42)
+X_train_resampled, y_train_resampled = rus.fit_resample(X_train_new, y_train)
+
+# Retrain model on oversampled data
+RF_clf.fit(X_train_resampled, y_train_resampled)
+
+# Evaluate model accuracy on test data
+print("Accuracy after undasampling with randomundersampler:", RF_clf.score(X_test_new, y_test))
 
 #print("accuracy not grid:",RF_clf.score(X_test_new, y_test))
-print("accuracy with grid",grid_search.score(X_test_new, y_test))
-print(grid_search.best_params_)
+#print("accuracy with grid",grid_search.score(X_test_new, y_test))
+#print(grid_search.best_params_)
 
 #accuracy with grid 0.9421346244934478 {'n_estimators': 98, 'min_samples_split': 2, 'max_depth': 26}
 #{'n_estimators': 106, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': None, 'max_depth': 30, 'bootstrap': True}
 #accuracy with grid 0.9609318807782047{'n_estimators': 95, 'min_samples_split': 2, 'min_samples_leaf': 4, 'max_features': None, 'max_depth': 50, 'bootstrap': True}
 #accuracy with grid 0.965633387716436 {'n_estimators': 95, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'max_depth': 40, 'bootstrap': True}
+#Accuracy after oversampling with SMOTE: 0.9631510622247952
+#Accuracy after oversampling with ADASYN: 0.9624756591758329
+#Accuracy after undasampling with randomundersampler: 0.7422591793414381
