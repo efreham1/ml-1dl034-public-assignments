@@ -5,20 +5,19 @@ import seaborn as sns
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import GenericUnivariateSelect
+from sklearn.model_selection import RandomizedSearchCV
+from imblearn.over_sampling import SMOTE,ADASYN
+from imblearn.under_sampling import RandomUnderSampler
 
 
-
-
-# svm # Dump-truck jew-jesus
-# knn # giga fredde
-# RandomForest # wallenstam
-# DecisionTree # Ebitch
-# Naive Bayes # Mucus
 
 hyper_params= {
-    "n_estimators": np.arange(90, 110),
-    "max_depth": np.arange(23, 27),
-    "min_samples_split": np.arange(1, 5),
+    "n_estimators": np.arange(95, 110, dtype=int),
+    "max_depth": [None, 10, 20, 30, 40, 50],
+    "min_samples_split": [2, 5, 10, 15, 100],
+    "min_samples_leaf":  [1, 2, 4, 6, 8],
+    "max_features": ['sqrt', 'log2', None],
+    "bootstrap":[True]
 }
 
 df = pd.read_csv('train_dataset.csv')
@@ -46,29 +45,19 @@ plt.savefig(fname="class_distribution")
 
 target = df.pop(' Forest Cover Type Classes')
 features = df
-#features = GenericUnivariateSelect(mode='fdr').fit_transform(features, target)
+features = GenericUnivariateSelect(mode='fdr').fit_transform(features, target)
 
-#features = pd.DataFrame(features)
+features = pd.DataFrame(features)
 
 X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=69)
 
 
-
-RF_clf = RandomForestClassifier(max_depth=25, random_state=42)
+RF_clf = RandomForestClassifier(n_estimators= 95, min_samples_split= 5, min_samples_leaf=1, max_features= None, max_depth=40, bootstrap=True, random_state=42)
 RF_clf.fit(X_train, y_train)
 
-#grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=100, n_jobs=-1)
-#grid_search.fit(X_train,y_train)
 
 feature_scores = pd.Series(RF_clf.feature_importances_, index = X_train.columns).sort_values(ascending= False)
-print(f"number cof columns before drop:", {len(X_train.columns)})
-'''
-# Drops 25 columns, when score < 0.005
-for attribute, score in feature_scores.items():
-    if(score < 0.005):
-        df = df.drop(attribute,axis = 1)
-        # print(f"Dropped column: {attribute}")
-'''
+print(f"number columns before drop:", {len(X_train.columns)})
 
 # Identify features to drop (threshold can be adjusted)
 threshold = 0.001
@@ -78,18 +67,31 @@ features_to_drop = feature_scores[feature_scores < threshold].index
 X_train_new = X_train.drop(features_to_drop, axis=1)
 X_test_new = X_test.drop(features_to_drop, axis=1)
 
-print(f"number cof columns before drop after drop:", {len(X_train_new.columns)})
+print(f"number columns before drop after drop:", {len(X_train_new.columns)})
 
-RF_clf.fit(X_train_new, y_train)
+#grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=20, verbose=2, cv=3)
 
-# Evaluation
-accuracy = RF_clf.score(X_test_new, y_test)
+#grid_search.fit(X_train_new,y_train)
 
+#X_train_resampled, y_train_resampled = ADASYN().fit_resample(X_train_new, y_train)
 
-#y_pred_grid = grid_search.predict(X_test)
-y_pred = RF_clf.predict(X_test_new)
+rus = RandomUnderSampler(random_state=42)
+X_train_resampled, y_train_resampled = rus.fit_resample(X_train_new, y_train)
 
-print("accuracy not grid:",accuracy)
-#print("accuracy with grid",grid_search.score(X_test, y_test))
+# Retrain model on oversampled data
+RF_clf.fit(X_train_resampled, y_train_resampled)
+
+# Evaluate model accuracy on test data
+print("Accuracy after undasampling with randomundersampler:", RF_clf.score(X_test_new, y_test))
+
+#print("accuracy not grid:",RF_clf.score(X_test_new, y_test))
+#print("accuracy with grid",grid_search.score(X_test_new, y_test))
 #print(grid_search.best_params_)
 
+#accuracy with grid 0.9421346244934478 {'n_estimators': 98, 'min_samples_split': 2, 'max_depth': 26}
+#{'n_estimators': 106, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': None, 'max_depth': 30, 'bootstrap': True}
+#accuracy with grid 0.9609318807782047{'n_estimators': 95, 'min_samples_split': 2, 'min_samples_leaf': 4, 'max_features': None, 'max_depth': 50, 'bootstrap': True}
+#accuracy with grid 0.965633387716436 {'n_estimators': 95, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'max_depth': 40, 'bootstrap': True}
+#Accuracy after oversampling with SMOTE: 0.9631510622247952
+#Accuracy after oversampling with ADASYN: 0.9624756591758329
+#Accuracy after undasampling with randomundersampler: 0.7422591793414381
