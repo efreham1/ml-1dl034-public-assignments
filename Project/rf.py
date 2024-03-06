@@ -8,6 +8,7 @@ from sklearn.feature_selection import GenericUnivariateSelect
 from sklearn.model_selection import RandomizedSearchCV
 from imblearn.over_sampling import SMOTE,ADASYN
 from imblearn.under_sampling import RandomUnderSampler
+from sklearn.metrics import f1_score
 
 
 
@@ -67,7 +68,7 @@ features_to_drop = feature_scores[feature_scores < threshold].index
 X_train_new = X_train.drop(features_to_drop, axis=1)
 X_test_new = X_test.drop(features_to_drop, axis=1)
 
-print(f"number columns before drop after drop:", {len(X_train_new.columns)})
+print(f"number columns after drop:", {len(X_train_new.columns)})
 
 #grid_search = RandomizedSearchCV(RF_clf,hyper_params,n_iter=20, verbose=2, cv=3)
 
@@ -75,14 +76,21 @@ print(f"number columns before drop after drop:", {len(X_train_new.columns)})
 
 #X_train_resampled, y_train_resampled = ADASYN().fit_resample(X_train_new, y_train)
 
-rus = RandomUnderSampler(random_state=42)
-X_train_resampled, y_train_resampled = rus.fit_resample(X_train_new, y_train)
+#rus = RandomUnderSampler(random_state=42)
+#X_train_resampled, y_train_resampled = rus.fit_resample(X_train_new, y_train)
 
 # Retrain model on oversampled data
-RF_clf.fit(X_train_resampled, y_train_resampled)
+RF_clf.fit(X_train_new, y_train)
+
+pred = RF_clf.predict(X_test_new)
+
+print("f1 score: ", f1_score(y_test, pred, average= "macro")) #f1 score:  0.9366818855825992
+print("f1 score: ", f1_score(y_test, pred, average= "micro")) #f1 score:  0.9655719874392575
+print("f1 score: ", f1_score(y_test, pred, average= "weighted")) #f1 score:  0.9654923457131996
+print("f1 score: ", f1_score(y_test, pred, average=None)) #[0.96604775 0.97175394 0.95832458 0.87745557 0.89329182 0.9286475 0.96125205]
 
 # Evaluate model accuracy on test data
-print("Accuracy after undasampling with randomundersampler:", RF_clf.score(X_test_new, y_test))
+#print("Accuracy after undasampling with randomundersampler:", RF_clf.score(X_test_new, y_test))
 
 #print("accuracy not grid:",RF_clf.score(X_test_new, y_test))
 #print("accuracy with grid",grid_search.score(X_test_new, y_test))
